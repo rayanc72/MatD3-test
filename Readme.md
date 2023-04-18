@@ -1,147 +1,152 @@
-![](https://github.com/hybrid3-database/matd3/workflows/main/badge.svg)
+# Installation Guide of MatD<sup>3</sup> Using Conda Environment
 
-[![DOI](https://joss.theoj.org/papers/10.21105/joss.01945/status.svg)](https://doi.org/10.21105/joss.01945)
 
-MatD3 database software
-=======================
+## Prerequisites
 
-MatD3 is a database and a web application for experimental and theoretical data on solid materials. The objective is to ensure better access and reproducibility of research data and it is intended to be used by any research group wishing to make their scientific results publicly available.
+Before you proceed with the installation, ensure you have the following software installed on your system:
 
-Installation
-------------
+1. [Anaconda](https://www.anaconda.com/products/distribution) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
+2. Git (to clone the repository)
+3. [MySQL](https://dev.mysql.com/downloads/mysql/) (If you intend to use MySQL instead of SQLite)*
 
-**From source code**
+[* In older macs (using intel chips), MySQL installation needs to be carried out with the legacy password option.]
 
-These instructions are for quickly setting up a local server on your personal computer. For setting up a real server, see the full documentation at https://hybrid3-database.readthedocs.io/en/latest/.
+## Step 1: Clone the MatD3 repository
 
-* Clone the project
+To get started, clone the MatD3 repository from GitHub:
 
-  ```
-  git clone https://github.com/HybriD3-database/MatD3.git
-  cd MatD3
-  ```
-
-* In the root directory of the project, create a virtual Python environment
-
-   ```
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-* Upgrade pip and install all the requirements
-
-   ```
-   pip install --upgrade pip
-   pip install -vr requirements.txt
-   ```
-
-   If you run into any issues, install the prerequisites as requested by the error messages. On Ubuntu, it might be necessary to install the following packages first:
-
-   ```
-   sudo apt install libmysqlclient-dev
-   sudo apt install python3-dev
-   sudo apt install firefox-geckodriver
-   ```
-
-   On a Mac, it might be necessary to run
-
-   ```
-   brew install mariadb
-   brew install geckodriver
-   ```
-
-   If there are issues with installing MySQL/MariaDB and you only plan to use SQLite, remove the line `mysqlclient==1.4.2` from requirements.txt and proceed with the installation.
-
-* Define your environment in .env in the root directory of the project
-
-  ```
-  cp env.example .env
-  # edit .env
-  ```
-
-Importantly, the the access permissions for the .env file on the server MUST be set to 
-
-```
--r--r-----
+```bash
+git clone https://github.com/HybriD3-database/MatD3.git
 ```
 
-i.e., owner- and group readable but NOT world readable (otherwise, the .env file will be downloadable by anyone along with the remainder of the database). Use the `chmod` command to set the permissions correctly.
 
-  If you wish to use anything other than the SQLite database, you first need to set up that database (e.g., MariaDB). See https://hybrid3-database.readthedocs.io/en/latest/development.html for more details.
+## Step 2: Create a New Conda Environment
+Navigate to the MatD3 directory that was created after cloning the repository:
+```bash
+cd MatD3
+```
 
-* Initialize static files and perform database migrations
+create a new Conda environment for MatD3 using the following command:
 
-  ```
-  ./manage.py collectstatic
-  ./manage.py migrate
-  ```
+```bash
+conda create -n matd3_local pip
+```
 
-* Run tests
+## Step 3: Activate the Conda Environment
+Activate the newly created environment using the following command:
 
-  ```
-  ./manage.py test
-  ```
+```bash
+conda activate matd3_local
+```
 
-  Make sure the line
 
-  ```
-  127.0.0.1 localhost
-  ```
+## Step 4: Install the Required Packages 
 
-  is in your `/etc/hosts`.
+1. Edit the 'requirements.txt' file to remove the version requirements and mysqlclient:
 
-* Create a superuser
+```bash
+Django
+matplotlib
+numpy
+Pillow
+python-dateutil
+sentry-sdk
+raven
+python-decouple
+django-nested-admin
+djangorestframework
+coverage
+selenium
+requests
+Sphinx
+gunicorn
+sphinx_rtd_theme
+django-filter>=2.4.0
+```
 
-  ```
-  ./manage.py createsuperuser
-  ```
+2. to install these, use the following command:
 
-* If you want to customize the index page, make a copy of `home_default.html`,
+```bash
+pip install -r requirements.txt
+```
 
-  ```
-  cp -v mainproject/templates/mainproject/home{_default,}.html
-  ```
+3. Uncomment the following line in mainproject/settings.py:
 
-  and edit accordingly. Any images that `home.html` refers to should be placed in `mainproject/static/mainproject/images`.
+```bash
+DEFAULT_AUTO_FIELD='django.db.models.AutoField' 
+```
 
-* Start the server
+5. Install geckodriver from conda
+conda install -c conda-forge geckodriver
 
-  ```
-  ./manage.py runserver
-  ```
 
-* Open a web browser and go to http://127.0.0.1:8000/.
+## Step 5: Create a .env file and Perform Additional Set-Ups, if Using MySQL
 
-**Using Docker**
+Copy the provided env.example file:
 
-* Run the MatD3 Docker container in detached mode:
+```bash
+cp env.example .env
+```
 
-  ```
-  docker run -d --rm --name matd3 --env-file=env_file -p 80:80 matd3/matd3:1.0.0 python manage.py runserver 0.0.0.0:80
-  ```
+Additionally, if you wish to use MySQL:
 
-  where `env_file` (rename if you like) contains the necessary enrironment variables. See [here](https://github.com/HybriD3-database/MatD3/blob/master/env.example) for example contents. You can view the website by opening 0.0.0.0 in a web browser. If you wish to run the container on a different port, replace 80 in the command with the number of that port.
+1. Install MySQL client for conda
+```bash
+conda install -c conda-forge mysqlclient
+``` 
+2. in the .env file, specify that you are using MySQL:
+set `USE_SQLITE=False` (the Default is `True`)
 
-* Initialize static files and perform database migrations
+3. Create a database for using with MySQL:
 
-  ```
-  docker exec matd3 python manage.py collectstatic --noinput
-  docker exec matd3 python manage.py migrate
-  ```
+```bash
+mysql -u <your_mysql_username> -p 
+```
+This should prompt you to provide your MySQL password. After entering that, use,
 
-* Create super user
+```bash
+create database <your_database_name>;
+exit;
+```
 
-  ```
-  docker exec -it matd3 python manage.py createsuperuser
-  ```
+6. Update the MySQL database name, and your MySQL user info in the mainproject/settings.py file:
 
-* You can stop the container with
+```bash
+# Database
+...
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': '<your_database_name>',
+            'USER': config('DB_USER', default='<your_mysql_username>'),
+            'PASSWORD': config('DB_PASSWORD', default='<your_mysql_password>'),
+            'HOST': 'localhost',
+            'PORT': '',
+        }
+    }
+```
 
-  ```
-  docker container stop matd3
-  ```
 
-Usage
------
+## Step 6: Initialize the Database
 
-In order to enter data into the database, start by creating a new user (click on Register and follow instructions) or login as the superuser. Next, click on Add Data on the navigation bar in order to submit a data set into the database. Existing data can be viewed by using the Search function on the navigation bar.
+To Initialize static files and perform database migrations, run the following command:
+
+```bash
+./manage.py collectstatic
+./manage.py migrate
+```
+
+## Step 7: Create a Superuser
+Run the following command:
+```bash
+./manage.py createsuperuser
+```
+
+## Step 8: Start the Server
+Run the following command:
+```bash
+./manage.py runserver
+```
+
+
